@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+/* Range slider styling */
+.range-control {
+  @apply w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500;
+}
+
+.range-control-gripper {
+  @apply w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500;
+}
+
+/* Desktop knob styling */
+@media (min-width: 1024px) {
+  .range-control {
+    @apply w-32 h-32 rounded-full;
+    writing-mode: bt-lr;
+  }
+}

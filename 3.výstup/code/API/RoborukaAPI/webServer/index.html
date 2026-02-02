@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Control</title>
+    <link rel="stylesheet" href="public/output.css">
+</head>
+<body class="h-screen bg-gray-900">
+    <div class="flex flex-col md:flex-row h-full gap-4 p-4">
+        <!-- Control Panel -->
+        <div class="flex-1 bg-gray-800 rounded-lg shadow-lg p-6 overflow-auto">
+            <h2 class="text-2xl font-bold text-white mb-6">Control Panel</h2>
+            
+            <!-- Controls grid -->
+            <div class="space-y-6 lg:grid lg:grid-cols-3 gap-6 mb-8">
+                <!-- Yaw -->
+                <div class="flex flex-col items-center">
+                    <label class="text-white text-sm font-semibold mb-2">Yaw</label>
+                    <input type="range" min="-180" max="180" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                </div>
+                
+                <!-- Pitch 1 -->
+                <div class="flex flex-col items-center">
+                    <label class="text-white text-sm font-semibold mb-2">Pitch 1</label>
+                    <input type="range" min="-90" max="90" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                </div>
+                
+                <!-- Pitch 2 -->
+                <div class="flex flex-col items-center">
+                    <label class="text-white text-sm font-semibold mb-2">Pitch 2</label>
+                    <input type="range" min="-90" max="90" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                </div>
+                
+                <!-- Pitch 3 -->
+                <div class="flex flex-col items-center">
+                    <label class="text-white text-sm font-semibold mb-2">Pitch 3</label>
+                    <input type="range" min="-90" max="90" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                </div>
+                
+                <!-- Roll -->
+                <div class="flex flex-col items-center">
+                    <label class="text-white text-sm font-semibold mb-2">Roll</label>
+                    <input type="range" min="-180" max="180" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                </div>
+                
+                <!-- Gripper -->
+                <div class="flex flex-col items-center">
+                    <label class="text-white text-sm font-semibold mb-2">Gripper</label>
+                    <input type="range" min="0" max="100" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Visualizer -->
+        <div class="flex-1 bg-gray-800 rounded-lg shadow-lg p-6 overflow-auto">
+            <h2 class="text-2xl font-bold text-white mb-4">Visualizer</h2>
+            <div class="text-gray-400">
+                <!-- Add your visualization elements here -->
+            </div>
+        </div>
+    </div>
+</body>
+</html>
