@@ -22,3 +22,9 @@ jednotlivé výstupy mají vlastní složku s věcmi vytvořenými v průběhu p
 [3.výstup - popis](./3.výstup/3.výstup.md)
 
 [3.výstup - složka](./3.výstup/)
+
+### 4. výstup (16. 3. 2026)
+
+[4.výstup - popis](./4.výstup/4.výstup.md)
+
+[4.výstup - složka](./4.výstup/)
