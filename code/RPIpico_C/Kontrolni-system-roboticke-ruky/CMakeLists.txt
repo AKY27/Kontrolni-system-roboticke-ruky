@@ -61,10 +61,20 @@ target_include_directories(Kontrolni-system-roboticke-ruky PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
 )
 
-# Add any user requested libraries
-target_link_libraries(Kontrolni-system-roboticke-ruky 
+
+add_subdirectory(bluetooth-stdio stdio_bt)
+
+target_compile_definitions(Kontrolni-system-roboticke-ruky PUBLIC
+      "BT_NAME=\"Roboruka\""
+      PICO_FLASH_BANK_TOTAL_SIZE=0x2000           # = 2 * FLASH_SECTOR_SIZE (4KB sectors)
+      PICO_FLASH_BANK_STORAGE_OFFSET=0x1FE000     # = PICO_FLASH_SIZE_BYTES - PICO_FLASH_BANK_TOTAL_SIZE (16MB flash for Pico 2 W)
+      )
+target_link_libraries(Kontrolni-system-roboticke-ruky
+        bluetooth_stdio
         pico_cyw43_arch_none
         )
+
+
 
 pico_add_extra_outputs(Kontrolni-system-roboticke-ruky)
 

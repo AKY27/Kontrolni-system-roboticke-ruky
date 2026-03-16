@@ -1,2 +1,3 @@
 dualsense_controller
 pyserial
+Flask

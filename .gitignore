@@ -3,8 +3,6 @@
 
 # Node.js related
 node_modules/
-package.json
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
 npm-debug.log

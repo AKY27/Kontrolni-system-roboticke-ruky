@@ -5,7 +5,7 @@ import argparse
 from time import sleep
 
 argparser = argparse.ArgumentParser(description="Control Roboruka with DualSense controller")
-argparser.add_argument("--port", type=str, default="/dev/ttyACM0", help="Serial port for Roboruka (default: /dev/ttyACM0)")
+argparser.add_argument("--port", type=str, default="/dev/ttyACM0", help="Serial port for Roboruka (default: /dev/ttyACM1)")
 args = argparser.parse_args()
 port = args.port or "/dev/ttyACM0"
 
@@ -37,23 +37,38 @@ grip_delta = 0
 
 def on_left_stick_x_changed(value):
     global yaw_delta
-    yaw_delta = value * yaw_speed
+    if abs(value) >= 0.25:
+        yaw_delta = value * yaw_speed
+    else:
+        yaw_delta = 0
 
 def on_left_stick_y_changed(value):
     global pitch_delta
-    pitch_delta = value * pitch_speed
+    if abs(value) >= 0.25:
+        pitch_delta = value * pitch_speed
+    else:
+        pitch_delta = 0
 
 def on_right_stick_x_changed(value):
     global roll_delta
-    roll_delta = value * roll_speed
+    if abs(value) >= 0.25:
+        roll_delta = value * roll_speed
+    else:
+        roll_delta = 0
 
 def on_right_stick_y_changed(value):
     global pitch_1_delta
-    pitch_1_delta = value * pitch_1_speed
+    if abs(value) >= 0.25:
+        pitch_1_delta = value * pitch_1_speed
+    else:
+        pitch_1_delta = 0
 
 def on_r2_changed(value):
     global grip_delta
-    grip_delta = value * grip_speed
+    if abs(value) >= 0.25:
+        grip_delta = value * grip_speed
+    else:
+        grip_delta = 0
 
 ds.left_stick_x.on_change(on_left_stick_x_changed)
 ds.left_stick_y.on_change(on_left_stick_y_changed)

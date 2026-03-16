@@ -33,12 +33,3 @@ class roboruka:
     def close(self):
         self.send_command("stop\n")
         self.tty.close()
-
-
-if __name__ == "__main__":
-    ## start webserver - to be implemented
-    pass
-    
-    
-    
-        
