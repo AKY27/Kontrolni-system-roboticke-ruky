@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot IK Control</title>
+    <link rel="stylesheet" href="robot.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<div class="page">
+
+    <!-- ===== Panel ===== -->
+    <div class="panel">
+        <div>
+            <h1 class="panel-title">Robot <span>IK</span></h1>
+            <p class="panel-subtitle">Inverse Kinematics — server-side solver</p>
+        </div>
+
+        <a class="nav-link" href="/fk">← FK mode</a>
+
+        <!-- Target position -->
+        <div>
+            <p class="section-label">Target position (world)</p>
+            <div style="display:flex;flex-direction:column;gap:0.9rem;">
+
+                <div class="slider-row">
+                    <div class="slider-header">
+                        <span class="slider-label lbl-red">X <span class="hint">(far)</span></span>
+                        <span class="slider-value val-red" id="vX">0.00</span>
+                    </div>
+                    <input id="targetX" type="range" min="-3" max="3" value="0" step="0.05" class="accent-red">
+                </div>
+
+                <div class="slider-row">
+                    <div class="slider-header">
+                        <span class="slider-label lbl-green">Y <span class="hint">(wide, ≥ 0)</span></span>
+                        <span class="slider-value val-green" id="vY">3.00</span>
+                    </div>
+                    <input id="targetY" type="range" min="0" max="3" value="3" step="0.05" class="accent-green">
+                </div>
+
+                <div class="slider-row">
+                    <div class="slider-header">
+                        <span class="slider-label lbl-blue">Z <span class="hint">(tall)</span></span>
+                        <span class="slider-value val-blue" id="vZ">0.50</span>
+                    </div>
+                    <input id="targetZ" type="range" min="-1" max="4" value="0.5" step="0.05" class="accent-blue">
+                </div>
+
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- End-effector -->
+        <div>
+            <p class="section-label">End-effector</p>
+            <div style="display:flex;flex-direction:column;gap:0.9rem;">
+
+                <div class="slider-row">
+                    <div class="slider-header">
+                        <span class="slider-label lbl-purple">Wrist Pitch θ</span>
+                        <span class="slider-value val-purple" id="vWP">90°</span>
+                    </div>
+                    <input id="wristPitch" type="range" min="-90" max="90" value="90" step="5" class="accent-purple">
+                </div>
+
+                <div class="slider-row">
+                    <div class="slider-header">
+                        <span class="slider-label lbl-sky">Roll</span>
+                        <span class="slider-value val-sky" id="vRoll">0°</span>
+                    </div>
+                    <input id="roll" type="range" min="-90" max="90" value="0" step="5" class="accent-sky">
+                </div>
+
+                <div class="slider-row">
+                    <div class="slider-header">
+                        <span class="slider-label lbl-teal">Gripper</span>
+                        <span class="slider-value val-teal" id="vGripper">0%</span>
+                    </div>
+                    <input id="gripper" type="range" min="0" max="100" value="0" step="5" class="accent-teal">
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="status-badge" id="status">Waiting…</div>
+
+        <!-- Solved angles -->
+        <div class="readout-card">
+            <p class="card-title">Solved Joint Angles</p>
+            <div class="angle-list">
+                <div class="angle-item"><span class="angle-name">Yaw</span>    <span class="angle-deg" id="aYaw">—</span></div>
+                <div class="angle-item"><span class="angle-name">Pitch 1</span><span class="angle-deg" id="aP1">—</span></div>
+                <div class="angle-item"><span class="angle-name">Pitch 2</span><span class="angle-deg" id="aP2">—</span></div>
+                <div class="angle-item"><span class="angle-name">Pitch 3</span><span class="angle-deg" id="aP3">—</span></div>
+                <div class="angle-item"><span class="angle-name">Roll</span>    <span class="angle-deg" id="aRoll">—</span></div>
+                <div class="angle-item"><span class="angle-name">Gripper</span><span class="angle-deg" id="aGrip">—</span></div>
+            </div>
+        </div>
+
+        <!-- Gripper world position -->
+        <div class="readout-card">
+            <p class="card-title">Gripper Position (World)</p>
+            <div class="readout-grid">
+                <div class="readout-cell">
+                    <p class="cell-label">X</p>
+                    <p class="cell-value val-cyan" id="gX">0.00</p>
+                </div>
+                <div class="readout-cell">
+                    <p class="cell-label">Y</p>
+                    <p class="cell-value val-cyan" id="gY">0.00</p>
+                </div>
+                <div class="readout-cell">
+                    <p class="cell-label">Z</p>
+                    <p class="cell-value val-cyan" id="gZ">0.00</p>
+                </div>
+                <div class="readout-cell">
+                    <p class="cell-label">Total Pitch</p>
+                    <p class="cell-value val-purple" id="gPitch">0.00°</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Viewport ===== -->
+    <div class="viewport" id="viewport">
+        <div class="cam-hint">Left drag: orbit · Right drag: pan · Scroll: zoom</div>
+    </div>
+
+</div>
+<script>
+// ============================================================
+// Three.js scene
+// ============================================================
+const container = document.getElementById('viewport');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x030712);
+
+const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.shadowMap.enabled = true;
+renderer.setPixelRatio(window.devicePixelRatio);
+container.appendChild(renderer.domElement);
+
+function resizeRenderer() {
+    const w = container.clientWidth, h = container.clientHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+}
+resizeRenderer();
+window.addEventListener('resize', resizeRenderer);
+
+// Lighting
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const dlight = new THREE.DirectionalLight(0xffffff, 0.85);
+dlight.position.set(5, 8, 4);
+dlight.castShadow = true;
+scene.add(dlight);
+
+// Grid
+scene.add(new THREE.GridHelper(10, 10, 0x1f2937, 0x1f2937));
+
+// ---- Camera orbit ----
+const cam = { r: 7, theta: 0, phi: Math.PI / 3, target: new THREE.Vector3(0, 1, 0), dragging: false, panning: false, lx: 0, ly: 0 };
+function applyCamera() {
+    const { r, theta, phi } = cam;
+    camera.position.set(
+        cam.target.x + r * Math.sin(phi) * Math.sin(theta),
+        cam.target.y + r * Math.cos(phi),
+        cam.target.z + r * Math.sin(phi) * Math.cos(theta));
+    camera.lookAt(cam.target);
+}
+applyCamera();
+renderer.domElement.addEventListener('mousedown', e => {
+    if (e.button === 0) { cam.dragging = true; cam.panning = false; }
+    if (e.button === 1 || e.button === 2) { cam.panning = true; cam.dragging = false; }
+    cam.lx = e.clientX; cam.ly = e.clientY; e.preventDefault();
+});
+renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+window.addEventListener('mouseup', () => { cam.dragging = false; cam.panning = false; });
+window.addEventListener('mousemove', e => {
+    const dx = e.clientX - cam.lx, dy = e.clientY - cam.ly;
+    cam.lx = e.clientX; cam.ly = e.clientY;
+    if (cam.dragging) {
+        cam.theta -= dx * 0.005;
+        cam.phi = Math.max(0.05, Math.min(Math.PI - 0.05, cam.phi - dy * 0.005));
+        applyCamera();
+    } else if (cam.panning) {
+        const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd);
+        const right = new THREE.Vector3().crossVectors(fwd, camera.up).normalize();
+        const up = camera.up.clone().normalize();
+        const s = cam.r * 0.001;
+        cam.target.addScaledVector(right, -dx * s);
+        cam.target.addScaledVector(up, dy * s);
+        applyCamera();
+    }
+});
+renderer.domElement.addEventListener('wheel', e => {
+    cam.r = Math.max(1, Math.min(30, cam.r + e.deltaY * 0.01));
+    applyCamera();
+}, { passive: true });
+
+// ---- Axis lines & labels ----
+function axisLine(dir, len, color) {
+    const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), dir.clone().multiplyScalar(len)]);
+    scene.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color, depthTest: false })));
+}
+function axisLabel(text, color, pos) {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+    const ctx = c.getContext('2d'); ctx.clearRect(0, 0, 128, 64);
+    ctx.font = 'bold 48px monospace'; ctx.fillStyle = color;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, 64, 32);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false }));
+    sp.scale.set(0.6, 0.3, 1); sp.position.set(...pos); scene.add(sp);
+}
+axisLine(new THREE.Vector3(0, 0, 1), 2.5, 0xff4444); axisLabel('X', '#ff4444', [0, 0.15, 2.7]);
+axisLine(new THREE.Vector3(1, 0, 0), 2.5, 0x44ff44); axisLabel('Y', '#44ff44', [2.7, 0.15, 0]);
+axisLine(new THREE.Vector3(0, 1, 0), 2.5, 0x4488ff); axisLabel('Z', '#4488ff', [0.15, 2.7, 0]);
+
+// ---- Target marker ----
+const targetMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.1, 16, 16),
+    new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xff3300, emissiveIntensity: 0.5 })
+);
+scene.add(targetMesh);
+const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.07, 0.14, 32),
+    new THREE.MeshBasicMaterial({ color: 0xff6600, side: THREE.DoubleSide, transparent: true, opacity: 0.6 })
+);
+ring.rotation.x = -Math.PI / 2;
+targetMesh.add(ring);
+
+// ---- Arm meshes ----
+const armGroup = new THREE.Group(); scene.add(armGroup);
+
+function mkCyl(r, h, color, x=0, y=0, z=0) {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 32),
+        new THREE.MeshStandardMaterial({ color, metalness: 0.65, roughness: 0.35 }));
+    m.position.set(x, y, z); m.castShadow = true; return m;
+}
+function mkBox(w, h, d, color, x=0, y=0, z=0) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d),
+        new THREE.MeshStandardMaterial({ color, metalness: 0.65, roughness: 0.35 }));
+    m.position.set(x, y, z); m.castShadow = true; return m;
+}
+
+const C = 0xa8a7a7;
+const base = mkBox(0.5, 0.1, 0.5, C); armGroup.add(base);
+
+const waistGroup    = new THREE.Group(); waistGroup.position.y = 0.75; armGroup.add(waistGroup);
+const shoulderGroup = new THREE.Group(); waistGroup.add(shoulderGroup);
+base.add(mkCyl(0.1, 0.75, C, 0, 0.375, 0));
+shoulderGroup.add(mkCyl(0.08, 1.05, C, 0, 0.525, 0));
+
+const elbowGroup = new THREE.Group(); elbowGroup.position.y = 1.05; shoulderGroup.add(elbowGroup);
+elbowGroup.add(mkCyl(0.07, 1.0, C, 0, 0.5, 0));
+
+const wristGroup = new THREE.Group(); wristGroup.position.y = 1.0; elbowGroup.add(wristGroup);
+wristGroup.add(mkCyl(0.06, 0.6, C, 0, 0.3, 0));
+wristGroup.add(mkBox(0.32, 0.3, 0.12, C, 0.1, 0.75, 0));
+
+const gripperGroup = new THREE.Group();
+gripperGroup.position.y = 0.9; gripperGroup.position.x = 0.2;
+wristGroup.add(gripperGroup);
+const gripperBase = mkBox(0.1, 0.1, 0.3, C); gripperGroup.add(gripperBase);
+const fingerL = mkBox(0.1, 0.8, 0.15, C, 0, 0.4,  0.075);
+const fingerR = mkBox(0.1, 0.8, 0.15, C, 0, 0.4, -0.075);
+gripperGroup.add(fingerL); gripperGroup.add(fingerR);
+
+// ---- Apply solved angles ----
+function applyAngles(yaw, p1, p2, p3, roll, gripPct) {
+    const r = d => d * Math.PI / 180;
+    waistGroup.rotation.y    = -r(yaw);
+    shoulderGroup.rotation.z = -r(p1);
+    elbowGroup.rotation.z    = -r(p2);
+    wristGroup.rotation.z    = -r(p3);
+    gripperGroup.rotation.y  =  r(roll);
+
+    const gp = gripPct / 100;
+    fingerL.position.z = -0.075 - 0.25 * Math.sin(Math.PI * gp / 2);
+    fingerR.position.z =  0.075 + 0.25 * Math.sin(Math.PI * gp / 2);
+    fingerL.position.y = fingerR.position.y = 0.2 + 0.2 * Math.cos(Math.PI * gp / 2);
+
+    const wp = new THREE.Vector3();
+    gripperBase.getWorldPosition(wp);
+    document.getElementById('gX').textContent = wp.x.toFixed(2);
+    document.getElementById('gY').textContent = wp.z.toFixed(2);
+    document.getElementById('gZ').textContent = wp.y.toFixed(2);
+    document.getElementById('gPitch').textContent = (p1 + p2 + p3).toFixed(2) + '°';
+}
+
+// ---- Slider wiring ----
+const sliders = {
+    targetX:    document.getElementById('targetX'),
+    targetY:    document.getElementById('targetY'),
+    targetZ:    document.getElementById('targetZ'),
+    wristPitch: document.getElementById('wristPitch'),
+    roll:       document.getElementById('roll'),
+    gripper:    document.getElementById('gripper'),
+};
+const statusEl = document.getElementById('status');
+
+// ---- IK request ----
+async function runIK() {
+    const tX   = parseFloat(sliders.targetX.value);
+    const tY   = parseFloat(sliders.targetY.value);
+    const tZ   = parseFloat(sliders.targetZ.value);
+    const wp   = parseFloat(sliders.wristPitch.value);
+    const roll = parseFloat(sliders.roll.value);
+    const grip = parseFloat(sliders.gripper.value);
+
+    document.getElementById('vX').textContent       = tX.toFixed(2);
+    document.getElementById('vY').textContent       = tY.toFixed(2);
+    document.getElementById('vZ').textContent       = tZ.toFixed(2);
+    document.getElementById('vWP').textContent      = wp + '°';
+    document.getElementById('vRoll').textContent    = roll + '°';
+    document.getElementById('vGripper').textContent = grip + '%';
+
+    // user: X=threeZ, Y=threeX, Z=threeY
+    targetMesh.position.set(tY, tZ, tX);
+
+    let result;
+    try {
+        const resp = await fetch('http://localhost:5000/solve_ik', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ x: tX, y: tY, z: tZ, theta: wp, roll, gripper: grip }),
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            statusEl.textContent = '⚠ ' + (err.error || 'Server error');
+            statusEl.className = 'status-badge error';
+            return;
+        }
+        result = await resp.json();
+    } catch {
+        statusEl.textContent = '⚠ Cannot reach server';
+        statusEl.className = 'status-badge error';
+        return;
+    }
+
+    statusEl.textContent = result.reachable ? '✓ Reachable' : '⚠ Clamped to reach limit';
+    statusEl.className   = 'status-badge ' + (result.reachable ? 'ok' : 'warn');
+
+    applyAngles(result.yaw, result.pitch1, result.pitch2, result.pitch3, result.roll, result.gripper);
+
+    document.getElementById('aYaw').textContent  = result.yaw.toFixed(1) + '°';
+    document.getElementById('aP1').textContent   = result.pitch1.toFixed(1) + '°';
+    document.getElementById('aP2').textContent   = result.pitch2.toFixed(1) + '°';
+    document.getElementById('aP3').textContent   = result.pitch3.toFixed(1) + '°';
+    document.getElementById('aRoll').textContent = result.roll.toFixed(1) + '°';
+    document.getElementById('aGrip').textContent = result.gripper.toFixed(0) + '%';
+}
+
+Object.values(sliders).forEach(s => s.addEventListener('input', runIK));
+
+// Animation loop
+(function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); })();
+
+// Initial solve with starting position X=0, Y=2.5, Z=1
+runIK();
+</script>
+</body>
+</html>
