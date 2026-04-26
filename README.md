@@ -5,6 +5,11 @@ jednotlivé výstupy mají vlastní složku s věcmi vytvořenými v průběhu p
 
 ---
 
+## dokumentace knihovny
+[Dokumentace](./dokumentace/dokumentace.md)
+
+---
+
 ### 1. výstup (16. 11. 2025)
 
 [1. výstup - popis](./1.výstup/1.výstup.md)

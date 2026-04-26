@@ -91,7 +91,7 @@ def solve_ik_endpoint():
     # Send to robot if connected
     if robot is not None:
         angles = [
-            result['yaw'],
+            -result['yaw'],
             -result['pitch1'],   # sign convention matches FK sender
             result['pitch2'],
             result['pitch3'],
